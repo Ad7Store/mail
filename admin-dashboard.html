@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KidWallet - Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="dashboard container">
+        <div class="admin-header">
+            <h1 style="font-family: 'Orbitron', sans-serif; color: var(--primary);">Admin Dashboard</h1>
+            <button class="logout-btn" id="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+        
+        <div class="admin-actions">
+            <button class="action-btn" id="view-users-btn">
+                <i class="fas fa-users"></i> View All Users
+            </button>
+            <button class="action-btn" id="view-friends-btn">
+                <i class="fas fa-user-friends"></i> Pending Friends
+            </button>
+            <button class="action-btn" id="view-withdrawals-btn">
+                <i class="fas fa-money-check-alt"></i> Withdrawal Requests
+            </button>
+            <button class="action-btn" id="back-dashboard-btn">
+                <i class="fas fa-arrow-left"></i> User Dashboard
+            </button>
+        </div>
+        
+        <!-- Users Table -->
+        <div id="users-table" class="admin-table">
+            <h3 style="padding: 20px; color: var(--primary);">All Users</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>User ID</th>
+                        <th>Full Name</th>
+                        <th>Balance</th>
+                        <th>Friends</th>
+                        <th>Level</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body">
+                    <!-- Users will be populated here -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Friends Table -->
+        <div id="friends-table" class="admin-table hidden">
+            <h3 style="padding: 20px; color: var(--primary);">Pending Friend Verification</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Friend Name</th>
+                        <th>Added By</th>
+                        <th>User ID</th>
+                        <th>Password</th>
+                        <th>WhatsApp</th>
+                        <th>Status</th>
+                        <th>Added At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="friends-table-body">
+                    <!-- Friends will be populated here -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Withdrawals Table -->
+        <div id="withdrawals-table" class="admin-table hidden">
+            <h3 style="padding: 20px; color: var(--primary);">Withdrawal Requests</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Account</th>
+                        <th>Status</th>
+                        <th>Requested</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="withdrawals-table-body">
+                    <!-- Withdrawals will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>
