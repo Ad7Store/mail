@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KidWallet - Add Friend</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="dashboard container">
+        <div class="header">
+            <div class="user-info">
+                <h2>Add New Friend</h2>
+                <div class="user-id" id="current-user-id">User ID: Loading...</div>
+            </div>
+            <button class="logout-btn" id="back-btn">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </button>
+        </div>
+        
+        <div class="task-info">
+            <h3>Add Friend Instructions</h3>
+            <p style="margin-bottom: 15px; line-height: 1.6;">
+                Add your friend's details below. Your friend will be verified within 72 hours.
+                Once verified, you will receive payment based on your current level.
+            </p>
+            
+            <div class="task-rates">
+                <div class="rate-item">Current Rate: <span class="rate-highlight" id="current-rate">Rs. 90/friend</span></div>
+                <div class="rate-item">Your Level: <span class="rate-highlight" id="user-level-display">1</span></div>
+                <div class="rate-item">Verified Friends: <span class="rate-highlight" id="verified-count">0</span></div>
+            </div>
+        </div>
+        
+        <div class="auth-box" style="max-width: 600px; margin: 0 auto;">
+            <form id="add-friend-form">
+                <div class="form-group">
+                    <label for="friend-name">Friend's Full Name</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-user-friends"></i>
+                        <input type="text" id="friend-name" placeholder="Enter friend's full name" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="friend-password">Friend's Password</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="friend-password" placeholder="Enter friend's password" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="friend-whatsapp">Friend's WhatsApp Number (Optional)</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-phone"></i>
+                        <input type="tel" id="friend-whatsapp" placeholder="Enter friend's WhatsApp number">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn">
+                    <i class="fas fa-user-plus"></i> Submit Friend
+                </button>
+                
+                <div id="friend-message" class="message hidden"></div>
+            </form>
+        </div>
+        
+        <div class="task-info" style="margin-top: 30px;">
+            <h4>Recent Added Friends</h4>
+            <div id="friends-list" style="margin-top: 15px;">
+                <!-- Friends will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/task.js"></script>
+</body>
+</html>
