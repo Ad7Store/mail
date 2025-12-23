@@ -1,90 +1,10 @@
-// GitHub API Configuration
-const GITHUB_TOKEN = 'YOUR_GITHUB_TOKEN';
-const GITHUB_REPO = 'username/repo-name';
-const GITHUB_API = 'https://api.github.com';
-
-// GitHub API Helper Functions
-async function githubRequest(endpoint, method = 'GET', data = null) {
-    const headers = {
-        'Authorization': `token ${GITHUB_TOKEN}`,
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-    };
-    
-    const options = {
-        method,
-        headers,
-        body: data ? JSON.stringify(data) : null
-    };
-    
-    try {
-        const response = await fetch(`${GITHUB_API}${endpoint}`, options);
-        if (!response.ok) {
-            throw new Error(`GitHub API error: ${response.status}`);
-        }
-        
-        if (method !== 'GET') {
-            return await response.json();
-        }
-        return await response.json();
-    } catch (error) {
-        console.error('GitHub API request failed:', error);
-        throw error;
-    }
-}
-
-async function getFile(path) {
-    try {
-        const file = await githubRequest(`/repos/${GITHUB_REPO}/contents/${path}`);
-        const content = JSON.parse(atob(file.content));
-        return content;
-    } catch (error) {
-        return [];
-    }
-}
-
-async function createOrUpdateFile(path, content, message) {
-    try {
-        let sha = null;
-        try {
-            const file = await githubRequest(`/repos/${GITHUB_REPO}/contents/${path}`);
-            sha = file.sha;
-        } catch (error) {
-            // File doesn't exist
-        }
-        
-        const data = {
-            message,
-            content: btoa(JSON.stringify(content, null, 2)),
-            sha
-        };
-        
-        return await githubRequest(`/repos/${GITHUB_REPO}/contents/${path}`, 'PUT', data);
-    } catch (error) {
-        console.error('Failed to create/update file:', error);
-        throw error;
-    }
-}
-
-async function updateFile(path, content, message) {
-    try {
-        const existingFile = await githubRequest(`/repos/${GITHUB_REPO}/contents/${path}`);
-        
-        const data = {
-            message,
-            content: btoa(JSON.stringify(content, null, 2)),
-            sha: existingFile.sha
-        };
-        
-        return await githubRequest(`/repos/${GITHUB_REPO}/contents/${path}`, 'PUT', data);
-    } catch (error) {
-        console.error('Failed to update file:', error);
-        throw error;
-    }
-}
+// Withdraw Page JavaScript
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadWithdrawPage();
+});
 
 // Check authentication
-async function checkAuth() {
+function checkAuth() {
     const currentUser = sessionStorage.getItem('currentUser');
     if (!currentUser) {
         window.location.href = 'index.html';
@@ -93,7 +13,16 @@ async function checkAuth() {
     
     try {
         const user = JSON.parse(currentUser);
-        const users = await getFile('data/users.json');
+        
+        // Verify user exists in storage
+        const storedUsers = localStorage.getItem('kidwallet_users');
+        if (!storedUsers) {
+            sessionStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+            return null;
+        }
+        
+        const users = JSON.parse(storedUsers);
         const latestUser = users.find(u => u.userId === user.userId);
         
         if (!latestUser) {
@@ -102,108 +31,275 @@ async function checkAuth() {
             return null;
         }
         
+        // Update session storage with latest data
         sessionStorage.setItem('currentUser', JSON.stringify(latestUser));
         return latestUser;
     } catch (error) {
+        console.error('Auth check failed:', error);
+        sessionStorage.removeItem('currentUser');
         window.location.href = 'index.html';
         return null;
     }
 }
 
-// Load user data and withdrawals
-async function loadUserData() {
-    const user = await checkAuth();
+// Check withdrawal eligibility
+function checkEligibility(user) {
+    const minBalance = 1550;
+    const minVerifiedFriends = 10;
+    
+    const isBalanceEligible = user.balance >= minBalance;
+    const isFriendsEligible = user.verifiedFriends >= minVerifiedFriends;
+    const isEligible = isBalanceEligible && isFriendsEligible;
+    
+    return {
+        isEligible,
+        isBalanceEligible,
+        isFriendsEligible,
+        minBalance,
+        minVerifiedFriends,
+        currentBalance: user.balance,
+        currentVerifiedFriends: user.verifiedFriends
+    };
+}
+
+// Update eligibility display
+function updateEligibilityDisplay(eligibility) {
+    const eligibilityList = document.getElementById('eligibility-list');
+    
+    let html = '';
+    
+    // Balance check
+    html += `
+        <div class="eligibility-item ${eligibility.isBalanceEligible ? 'eligible' : 'not-eligible'}">
+            <i class="fas ${eligibility.isBalanceEligible ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+            <div>
+                <strong>Balance:</strong> Rs. ${eligibility.currentBalance} / ${eligibility.minBalance}+
+                ${!eligibility.isBalanceEligible ? 
+                    ` <span style="color: var(--error);">(Need Rs. ${eligibility.minBalance - eligibility.currentBalance} more)</span>` : 
+                    ' ✅'}
+            </div>
+        </div>
+    `;
+    
+    // Friends check
+    html += `
+        <div class="eligibility-item ${eligibility.isFriendsEligible ? 'eligible' : 'not-eligible'}">
+            <i class="fas ${eligibility.isFriendsEligible ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+            <div>
+                <strong>Verified Friends:</strong> ${eligibility.currentVerifiedFriends} / ${eligibility.minVerifiedFriends}+
+                ${!eligibility.isFriendsEligible ? 
+                    ` <span style="color: var(--error);">(Need ${eligibility.minVerifiedFriends - eligibility.currentVerifiedFriends} more)</span>` : 
+                    ' ✅'}
+            </div>
+        </div>
+    `;
+    
+    // Overall eligibility
+    html += `
+        <div class="eligibility-item ${eligibility.isEligible ? 'eligible' : 'not-eligible'}" 
+             style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <i class="fas ${eligibility.isEligible ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+            <div>
+                <strong>Overall Status:</strong> 
+                <span style="color: ${eligibility.isEligible ? 'var(--success)' : 'var(--error)'}; font-weight: 700;">
+                    ${eligibility.isEligible ? 'ELIGIBLE FOR WITHDRAWAL' : 'NOT ELIGIBLE'}
+                </span>
+            </div>
+        </div>
+    `;
+    
+    eligibilityList.innerHTML = html;
+}
+
+// Load withdraw page data
+async function loadWithdrawPage() {
+    const user = checkAuth();
     if (!user) return;
     
     // Update user info
     document.getElementById('current-user-id').textContent = `User ID: ${user.userId}`;
-    document.getElementById('balance-amount').textContent = user.balance;
-    document.getElementById('user-balance').textContent = `Rs. ${user.balance}`;
-    document.getElementById('verified-friends').textContent = user.verifiedFriends;
+    document.getElementById('balance-amount').textContent = user.balance.toLocaleString();
+    
+    // Update max amount
+    const maxAmountInput = document.getElementById('withdraw-amount');
+    const maxAmountSpan = document.getElementById('max-amount');
+    maxAmountInput.max = user.balance;
+    maxAmountSpan.textContent = user.balance.toLocaleString();
+    
+    // Set default amount (minimum or balance if less than minimum)
+    const defaultAmount = Math.min(user.balance, 1550);
+    maxAmountInput.value = defaultAmount;
     
     // Check eligibility
-    const isEligible = user.balance >= 1550 && user.verifiedFriends > 10;
-    const statusElement = document.getElementById('withdrawal-status');
-    statusElement.textContent = isEligible ? 'Eligible' : 'Not Eligible';
-    statusElement.style.color = isEligible ? 'var(--success)' : 'var(--error)';
+    const eligibility = checkEligibility(user);
+    updateEligibilityDisplay(eligibility);
     
-    // Set max withdrawal amount
-    const amountInput = document.getElementById('withdraw-amount');
-    amountInput.max = user.balance;
-    amountInput.value = Math.max(1550, user.balance);
+    // Disable form if not eligible
+    const form = document.getElementById('withdraw-form');
+    const submitBtn = document.getElementById('submit-btn');
+    
+    if (!eligibility.isEligible) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-ban"></i> Not Eligible';
+        submitBtn.style.opacity = '0.6';
+        submitBtn.style.cursor = 'not-allowed';
+    } else {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Withdrawal Request';
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+    }
     
     // Load withdrawal history
     try {
-        const userData = await getFile(`data/users/${user.userId}.json`);
-        const withdrawals = userData.withdrawals || [];
-        
-        const withdrawalsList = document.getElementById('withdrawals-list');
-        withdrawalsList.innerHTML = '';
-        
-        if (withdrawals.length === 0) {
-            withdrawalsList.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No withdrawal requests yet</p>';
-        } else {
-            const recentWithdrawals = withdrawals.slice(-5).reverse();
+        const userDataStr = localStorage.getItem(`kidwallet_user_${user.userId}`);
+        if (userDataStr) {
+            const userData = JSON.parse(userDataStr);
+            const withdrawals = userData.withdrawals || [];
             
-            recentWithdrawals.forEach(withdrawal => {
-                const withdrawalElement = document.createElement('div');
-                withdrawalElement.className = 'rate-item';
-                withdrawalElement.style.marginBottom = '10px';
-                withdrawalElement.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>Rs. ${withdrawal.amount} via ${withdrawal.method}</span>
-                        <span class="status-${withdrawal.status}">${withdrawal.status}</span>
-                    </div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">
-                        Requested: ${new Date(withdrawal.requestedAt).toLocaleDateString()}
-                        ${withdrawal.processedAt ? ` | Processed: ${new Date(withdrawal.processedAt).toLocaleDateString()}` : ''}
-                    </div>
-                    ${withdrawal.notes ? `<div style="font-size: 0.8rem; margin-top: 5px;">${withdrawal.notes}</div>` : ''}
-                `;
-                withdrawalsList.appendChild(withdrawalElement);
-            });
+            // Display withdrawals list
+            displayWithdrawalsList(withdrawals);
+        } else {
+            document.getElementById('withdrawals-list').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-history"></i>
+                    <p>No withdrawal history</p>
+                </div>
+            `;
         }
     } catch (error) {
         console.error('Failed to load withdrawals:', error);
+        document.getElementById('withdrawals-list').innerHTML = `
+            <div class="error" style="color: var(--error); text-align: center;">
+                Failed to load withdrawal history. Please try refreshing.
+            </div>
+        `;
     }
 }
 
-// Handle withdrawal form
+// Display withdrawals list
+function displayWithdrawalsList(withdrawals) {
+    const withdrawalsList = document.getElementById('withdrawals-list');
+    
+    if (!withdrawals || withdrawals.length === 0) {
+        withdrawalsList.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-history"></i>
+                <p>No withdrawal history</p>
+                <p style="font-size: 0.9rem; margin-top: 10px;">Submit your first withdrawal above!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Sort withdrawals by date (newest first)
+    const sortedWithdrawals = [...withdrawals].sort((a, b) => 
+        new Date(b.requestedAt || b.date || 0) - new Date(a.requestedAt || a.date || 0)
+    );
+    
+    let html = '';
+    
+    sortedWithdrawals.forEach(withdrawal => {
+        const status = withdrawal.status || 'pending';
+        const statusClass = `withdrawal-${status}`;
+        const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+        
+        const date = withdrawal.requestedAt ? new Date(withdrawal.requestedAt) : new Date();
+        const dateStr = date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        html += `
+            <div class="withdrawal-item ${statusClass}">
+                <div class="withdrawal-header">
+                    <div class="withdrawal-amount">Rs. ${withdrawal.amount || 0}</div>
+                    <div class="withdrawal-status status-${status}">${statusText}</div>
+                </div>
+                <div class="withdrawal-details">
+                    <div><strong>Method:</strong> ${withdrawal.method || 'N/A'}</div>
+                    <div><strong>Account:</strong> ${withdrawal.accountTitle || 'N/A'}</div>
+                </div>
+                <div class="withdrawal-date">
+                    Requested: ${dateStr}
+                    ${withdrawal.processedAt ? ` | Processed: ${new Date(withdrawal.processedAt).toLocaleDateString()}` : ''}
+                </div>
+                ${withdrawal.notes ? `<div style="margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; font-size: 0.9rem;">${withdrawal.notes}</div>` : ''}
+            </div>
+        `;
+    });
+    
+    withdrawalsList.innerHTML = html;
+}
+
+// Show message
+function showMessage(elementId, message, type) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = message;
+        element.className = `message ${type}`;
+        element.classList.remove('hidden');
+        
+        // Auto hide after 5 seconds
+        setTimeout(() => {
+            element.classList.add('hidden');
+        }, 5000);
+    }
+}
+
+// Handle withdrawal form submission
 document.getElementById('withdraw-form').addEventListener('submit', async function(e) {
     e.preventDefault();
+    
+    const submitBtn = document.getElementById('submit-btn');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    submitBtn.disabled = true;
     
     const method = document.getElementById('withdraw-method').value;
     const accountNumber = document.getElementById('account-number').value.trim();
     const accountTitle = document.getElementById('account-title').value.trim();
     const amount = parseInt(document.getElementById('withdraw-amount').value);
     
-    const user = await checkAuth();
-    if (!user) return;
-    
-    // Validate inputs
+    // Basic validation
     if (!method || !accountNumber || !accountTitle || !amount) {
-        showMessage('withdraw-message', 'Please fill in all fields!', 'error');
-        return;
-    }
-    
-    // Check rules
-    if (user.balance < 1550) {
-        showMessage('withdraw-message', 'Withdrawal failed! Balance must be at least Rs. 1550.', 'error');
-        return;
-    }
-    
-    if (user.verifiedFriends < 10) {
-        showMessage('withdraw-message', 'Withdrawal failed! You need at least 10 verified friends.', 'error');
+        showMessage('withdraw-message', 'Please fill in all required fields!', 'error');
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
         return;
     }
     
     if (amount < 1550) {
-        showMessage('withdraw-message', 'Withdrawal failed! Minimum withdrawal is Rs. 1550.', 'error');
+        showMessage('withdraw-message', 'Minimum withdrawal amount is Rs. 1550!', 'error');
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
+        return;
+    }
+    
+    const user = checkAuth();
+    if (!user) {
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
+        return;
+    }
+    
+    // Check eligibility again
+    const eligibility = checkEligibility(user);
+    if (!eligibility.isEligible) {
+        showMessage('withdraw-message', 'You are not eligible for withdrawal. Check requirements above.', 'error');
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
         return;
     }
     
     if (amount > user.balance) {
-        showMessage('withdraw-message', 'Withdrawal failed! Amount exceeds your balance.', 'error');
+        showMessage('withdraw-message', 'Withdrawal amount exceeds your balance!', 'error');
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
         return;
     }
     
@@ -213,77 +309,112 @@ document.getElementById('withdraw-form').addEventListener('submit', async functi
             id: Date.now().toString(),
             userId: user.userId,
             username: user.username,
+            fullName: user.fullName,
             amount: amount,
             method: method,
             accountNumber: accountNumber,
             accountTitle: accountTitle,
             status: 'pending',
-            requestedAt: new Date().toISOString()
+            requestedAt: new Date().toISOString(),
+            estimatedCompletion: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(), // 72 hours from now
+            notes: 'Withdrawal request submitted. Will be processed within 72 hours.'
         };
         
-        // Update user's data file
-        const userDataPath = `data/users/${user.userId}.json`;
-        let userData = await getFile(userDataPath);
+        // Get existing users
+        const storedUsers = localStorage.getItem('kidwallet_users');
+        const users = storedUsers ? JSON.parse(storedUsers) : [];
         
-        if (!userData.withdrawals) userData.withdrawals = [];
-        userData.withdrawals.push(newWithdrawal);
-        
-        // Update user's balance in main users file
-        const users = await getFile('data/users.json');
+        // Find current user index
         const userIndex = users.findIndex(u => u.userId === user.userId);
-        
-        if (userIndex !== -1) {
-            // Don't deduct balance yet - wait for admin approval
-            // users[userIndex].balance -= amount;
-            
-            await updateFile('data/users.json', users, `Withdrawal request by ${user.username}`);
-            
-            // Update session storage
-            sessionStorage.setItem('currentUser', JSON.stringify(users[userIndex]));
+        if (userIndex === -1) {
+            showMessage('withdraw-message', 'User not found! Please login again.', 'error');
+            submitBtn.innerHTML = originalBtnText;
+            submitBtn.disabled = false;
+            return;
         }
         
+        // NOTE: We DON'T deduct balance yet - wait for admin approval
+        // users[userIndex].balance -= amount;
+        
+        // Save updated users (even though balance not changed, we save for consistency)
+        localStorage.setItem('kidwallet_users', JSON.stringify(users));
+        
+        // Update session storage
+        sessionStorage.setItem('currentUser', JSON.stringify(users[userIndex]));
+        
         // Update user's data file
-        await createOrUpdateFile(userDataPath, userData, `Withdrawal request: Rs. ${amount}`);
+        const userDataKey = `kidwallet_user_${user.userId}`;
+        const userDataStr = localStorage.getItem(userDataKey);
+        let userData = userDataStr ? JSON.parse(userDataStr) : {
+            user: users[userIndex],
+            friends: [],
+            withdrawals: [],
+            activities: []
+        };
         
-        // Add to global withdrawals file for admin access
-        const allWithdrawals = await getFile('data/all_withdrawals.json');
+        // Add withdrawal to user's withdrawals list
+        userData.withdrawals = userData.withdrawals || [];
+        userData.withdrawals.push(newWithdrawal);
+        
+        // Add activity log
+        userData.activities = userData.activities || [];
+        userData.activities.push({
+            type: 'withdrawal_requested',
+            date: new Date().toISOString(),
+            message: `Withdrawal request: Rs. ${amount} via ${method}`,
+            withdrawalId: newWithdrawal.id
+        });
+        
+        // Save user data
+        localStorage.setItem(userDataKey, JSON.stringify(userData));
+        
+        // Add to all withdrawals list for admin
+        const allWithdrawalsKey = 'kidwallet_all_withdrawals';
+        const allWithdrawalsStr = localStorage.getItem(allWithdrawalsKey);
+        let allWithdrawals = allWithdrawalsStr ? JSON.parse(allWithdrawalsStr) : [];
         allWithdrawals.push(newWithdrawal);
-        await createOrUpdateFile('data/all_withdrawals.json', allWithdrawals, `New withdrawal request by ${user.username}`);
+        localStorage.setItem(allWithdrawalsKey, JSON.stringify(allWithdrawals));
         
-        showMessage('withdraw-message', 'Withdrawal request submitted! You will receive payment within 72 hours.', 'success');
+        // Show success message
+        showMessage('withdraw-message', `✅ Withdrawal request submitted! Rs. ${amount} will be sent to your ${method} account within 72 hours.`, 'success');
         
         // Reset form
         document.getElementById('withdraw-form').reset();
         
-        // Reload data
+        // Reload page data
         setTimeout(() => {
-            loadUserData();
+            loadWithdrawPage();
         }, 1000);
         
     } catch (error) {
         console.error('Failed to submit withdrawal:', error);
-        showMessage('withdraw-message', 'Failed to submit withdrawal. Please try again.', 'error');
+        showMessage('withdraw-message', '❌ Failed to submit withdrawal. Please try again.', 'error');
+    } finally {
+        // Reset button state
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
     }
 });
 
-// Show message
-function showMessage(elementId, message, type) {
-    const element = document.getElementById(elementId);
-    element.textContent = message;
-    element.className = `message ${type}`;
-    element.classList.remove('hidden');
-    
-    setTimeout(() => {
-        element.classList.add('hidden');
-    }, 5000);
-}
-
-// Back button
-document.getElementById('back-btn').addEventListener('click', function() {
-    window.location.href = 'dashboard.html';
+// Logout button
+document.getElementById('logout-btn').addEventListener('click', function() {
+    sessionStorage.removeItem('currentUser');
+    window.location.href = 'index.html';
 });
 
-// Initialize page
-window.addEventListener('DOMContentLoaded', async function() {
-    await loadUserData();
+// Auto-update amount field when user types
+document.getElementById('withdraw-amount').addEventListener('input', function() {
+    const user = checkAuth();
+    if (!user) return;
+    
+    const amount = parseInt(this.value) || 0;
+    const maxAmount = user.balance;
+    
+    if (amount > maxAmount) {
+        this.value = maxAmount;
+    }
+    
+    if (amount < 1550 && amount > 0) {
+        this.value = 1550;
+    }
 });
