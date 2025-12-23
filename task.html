@@ -7,6 +7,89 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .friends-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .friend-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            border-left: 4px solid;
+        }
+        
+        .friend-pending {
+            border-left-color: var(--warning);
+        }
+        
+        .friend-verified {
+            border-left-color: var(--success);
+        }
+        
+        .friend-declined {
+            border-left-color: var(--error);
+        }
+        
+        .friend-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .friend-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .friend-status {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .friend-date {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard container">
@@ -15,13 +98,18 @@
                 <h2>Add New Friend</h2>
                 <div class="user-id" id="current-user-id">User ID: Loading...</div>
             </div>
-            <button class="logout-btn" id="back-btn">
-                <i class="fas fa-arrow-left"></i> Back to Dashboard
-            </button>
+            <div>
+                <button class="action-btn" onclick="window.location.href='dashboard.html'" style="margin-right: 10px;">
+                    <i class="fas fa-home"></i> Dashboard
+                </button>
+                <button class="logout-btn" id="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
         </div>
         
         <div class="task-info">
-            <h3>Add Friend Instructions</h3>
+            <h3>Add Friend & Earn Money</h3>
             <p style="margin-bottom: 15px; line-height: 1.6;">
                 Add your friend's details below. Your friend will be verified within 72 hours.
                 Once verified, you will receive payment based on your current level.
@@ -31,13 +119,14 @@
                 <div class="rate-item">Current Rate: <span class="rate-highlight" id="current-rate">Rs. 90/friend</span></div>
                 <div class="rate-item">Your Level: <span class="rate-highlight" id="user-level-display">1</span></div>
                 <div class="rate-item">Verified Friends: <span class="rate-highlight" id="verified-count">0</span></div>
+                <div class="rate-item">Total Earnings: <span class="rate-highlight" id="total-earnings">Rs. 0</span></div>
             </div>
         </div>
         
-        <div class="auth-box" style="max-width: 600px; margin: 0 auto;">
+        <div class="auth-box" style="max-width: 600px; margin: 30px auto;">
             <form id="add-friend-form">
                 <div class="form-group">
-                    <label for="friend-name">Friend's Full Name</label>
+                    <label for="friend-name">Friend's Full Name *</label>
                     <div class="input-with-icon">
                         <i class="fas fa-user-friends"></i>
                         <input type="text" id="friend-name" placeholder="Enter friend's full name" required>
@@ -45,11 +134,12 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="friend-password">Friend's Password</label>
+                    <label for="friend-password">Friend's Password *</label>
                     <div class="input-with-icon">
                         <i class="fas fa-lock"></i>
                         <input type="password" id="friend-password" placeholder="Enter friend's password" required>
                     </div>
+                    <small>This password will be used by admin to verify the friend</small>
                 </div>
                 
                 <div class="form-group">
@@ -60,7 +150,7 @@
                     </div>
                 </div>
                 
-                <button type="submit" class="btn">
+                <button type="submit" class="btn" id="submit-btn">
                     <i class="fas fa-user-plus"></i> Submit Friend
                 </button>
                 
@@ -68,10 +158,12 @@
             </form>
         </div>
         
-        <div class="task-info" style="margin-top: 30px;">
-            <h4>Recent Added Friends</h4>
-            <div id="friends-list" style="margin-top: 15px;">
-                <!-- Friends will be loaded here -->
+        <div class="task-info">
+            <h4>Your Added Friends</h4>
+            <div id="friends-list" class="friends-list">
+                <div class="loading">
+                    <div class="loading-spinner"></div> Loading friends...
+                </div>
             </div>
         </div>
     </div>
