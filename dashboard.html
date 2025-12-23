@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KidWallet - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="dashboard-page" class="dashboard container">
+        <div class="header">
+            <div class="user-info">
+                <h2 id="welcome-user">Welcome, User!</h2>
+                <div class="user-id">User ID: <span id="user-id-display">XXXXXXXX</span></div>
+            </div>
+            <button class="logout-btn" id="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+        
+        <div class="wallet-card">
+            <div class="balance">Rs. <span id="balance-amount">0</span></div>
+            <div class="balance-label">Current Balance</div>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>User Level</h3>
+                <div class="stat-value" id="user-level">1</div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Added Friends</h3>
+                <div class="stat-value" id="total-friends">0</div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Verified Friends</h3>
+                <div class="stat-value" id="verified-friends">0</div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Pending Friends</h3>
+                <div class="stat-value" id="pending-friends">0</div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Declined Friends</h3>
+                <div class="stat-value" id="declined-friends">0</div>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button class="action-btn" id="withdraw-btn">
+                <i class="fas fa-money-bill-wave"></i> Withdraw
+            </button>
+            <button class="action-btn" id="task-btn">
+                <i class="fas fa-tasks"></i> Add Friend
+            </button>
+            <button class="action-btn hidden" id="admin-btn">
+                <i class="fas fa-user-shield"></i> Admin Panel
+            </button>
+        </div>
+        
+        <div class="task-info">
+            <h3>Task Rates</h3>
+            <div class="task-rates">
+                <div class="rate-item">Add 1 to 20 friends: <span class="rate-highlight">Rs. 90/friend</span></div>
+                <div class="rate-item">Add 21 to 30 friends: <span class="rate-highlight">Rs. 100/friend</span></div>
+                <div class="rate-item">Add 31 to 50 friends: <span class="rate-highlight">Rs. 110/friend</span></div>
+                <div class="rate-item">Add 51 to 100 friends: <span class="rate-highlight">Rs. 130/friend</span></div>
+                <div class="rate-item">Add 100+ friends: <span class="rate-highlight">Rs. 150/friend</span></div>
+            </div>
+            <div class="note">
+                Note: Friends will be verified in 72 hours. Make fresh friends for faster verification.
+            </div>
+        </div>
+    </div>
+    
+    <!-- Support Button -->
+    <div class="support-btn" id="support-btn">
+        <i class="fas fa-question"></i>
+    </div>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
